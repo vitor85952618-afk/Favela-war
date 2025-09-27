@@ -1,0 +1,21 @@
+{
+  "name": "Antares - Favela Strategy",
+  "short_name": "Antares",
+  "description": "Jogo de estratégia em ambiente de favela",
+  "start_url": "./",
+  "display": "fullscreen",
+  "theme_color": "#071022",
+  "background_color": "#071022",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512.png",
+      "sites": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

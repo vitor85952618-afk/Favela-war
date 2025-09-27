@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Antares — Favela Strategy</title>
+    <meta name="theme-color" content="#071022">
+    <meta name="description" content="Jogo de estratégia em favela - Antares">
+    <link rel="manifest" href="manifest.json">
+    <style>
+        :root {
+            --bg: #071022;
+            --panel: #06121b;
+            --accent: #f59e0b;
+            --muted: #9aa4b2;
+            --danger: #ef4444;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: linear-gradient(180deg, #041023, #071428);
+            color: #e6eef6;
+            height: 100vh;
+            overflow: hidden;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        #gameContainer {
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .topbar {
+            display: flex;
+            gap: 8px;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.3);
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .stat {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            min-width: 120px;
+            text-align: center;
+        }
+
+        .main-area {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+            gap: 10px;
+            padding: 10px;
+        }
+
+        @media (max-width: 768px) {
+            .main-area {
+                flex-direction: column;
+            }
+        }
+
+        .game-canvas-container {
+            flex: 1;
+            position: relative;
+            min-height: 400px;
+        }
+
+        #gameCanvas {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(180deg, #051426, #031422);
+            border-radius: 10px;
+            display: block;
+        }
+
+        .controls-panel {
+            width: 340px;
+            background: var(--panel);
+            border-radius: 10px;
+            padding: 15px;
+            overflow-y: auto;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.6);
+        }
+
+        @media (max-width: 768px) {
+            .controls-panel {
+                width: 100%;
+                max-height: 40vh;
+            }
+        }
+
+        h2 {
+            margin: 0 0 10px 0;
+            color: var(--accent);
+            font-size: 18px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 5px;
+        }
+
+        .button-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        button {
+            background: linear-gradient(180deg, #17212b, #0b151c);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #e6eef6;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        button:active {
+            transform: scale(0.95);
+            background: linear-gradient(180deg, #0b151c, #17212b);
+        }
+
+        button.primary {
+            background: linear-gradient(180deg, var(--accent), #c27806);
+            color: #071428;
+            font-weight: 700;
+        }
+
+        .section {
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .section-title {
+            font-size: 14px;
+            color: var(--muted);
+            margin-bottom: 8px;
+        }
+
+        .status-bar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 10px 0;
+            padding: 8px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 6px;
+        }
+
+        .log-container {
+            height: 150px;
+            overflow-y: auto;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 6px;
+            padding: 10px;
+            font-size: 13px;
+            margin-top: 10px;
+        }
+
+        .log-entry {
+            margin-bottom: 5px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .soldier-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .soldier-card {
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent);
+            padding: 8px;
+            border-radius: 6px;
+            font-size: 12px;
+        }
+
+        .mobile-controls {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .mobile-controls {
+                display: flex;
+                gap: 8px;
+                justify-content: center;
+                margin-top: 10px;
+            }
+        }
+
+        .game-message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            z-index: 100;
+            display: none;
+        }
+
+        footer {
+            text-align: center;
+            padding: 10px;
+            font-size: 12px;
+            color: var(--muted);
+            background: rgba(0, 0, 0, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <div class="topbar">
+            <div class="stat">Dinheiro: <b id="money">3000</b></div>
+            <div class="stat">Influência: <b id="influence">12</b></div>
+            <div class="stat">Calor: <b id="heat">8</b></div>
+            <div class="stat">Tempo: <b id="time">0</b></div>
+            <div class="stat">Soldados: <b id="soldierCount">0</b></div>
+        </div>
+
+        <div class="main-area">
+            <div class="game-canvas-container">
+                <canvas id="gameCanvas"></canvas>
+                <div class="status-bar">
+                    <span id="modeDisplay">Modo: Navegar</span>
+                    <span id="selectedZone">Zona: Antares</span>
+                </div>
+                <div class="mobile-controls">
+                    <button id="mobileAction">Ação</button>
+                    <button id="mobileBack">Voltar</button>
+                </div>
+            </div>
+
+            <div class="controls-panel">
+                <div class="section">
+                    <h2>Controles Principais</h2>
+                    <div class="button-group">
+                        <button id="openPoint" class="primary">Abrir Ponto</button>
+                        <button id="closePoint">Fechar Ponto</button>
+                        <button id="placeBarricade">Barricada</button>
+                        <button id="placeBus">Ônibus</button>
+                    </div>
+                    <div class="button-group">
+                        <button id="igniteBus">Incendiar</button>
+                        <button id="buyA">Comprar A</button>
+                        <button id="buyB">Comprar B</button>
+                        <button id="recruit">Recrutar</button>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2>Soldados</h2>
+                    <div class="button-group">
+                        <button id="paySalaries">Pagar Salários</button>
+                        <button id="upgradeTraining">Treinar</button>
+                    </div>
+                    <div class="soldier-grid" id="soldierList">
+                        <!-- Soldados serão listados aqui -->
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2>Ações Táticas</h2>
+                    <div class="button-group">
+                        <button id="raid">Atacar Área</button>
+                        <button id="robCargo">Roubar Carga</button>
+                        <button id="declareWar">Declarar Guerra</button>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2>Inteligência</h2>
+                    <div class="button-group">
+                        <button id="payInformer">Pagar Informante</button>
+                        <button id="toggleAutoOps">Auto-Ops: ON</button>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2>Log do Jogo</h2>
+                    <div class="log-container" id="gameLog">
+                        <div class="log-entry">Bem-vindo ao Antares - Favela Strategy</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            Antares - Favela Strategy | Jogue com responsabilidade
+        </footer>
+    </div>
+
+    <script>
+        // Configurações do jogo
+        const GameConfig = {
+            canvas: null,
+            ctx: null,
+            width: 0,
+            height: 0,
+            scale: 1,
+            isMobile: false
+        };
+
+        // Estado do jogo
+        const GameState = {
+            money: 3000,
+            influence: 12,
+            heat: 8,
+            time: 0,
+            points: {},
+            soldiers: [],
+            barricades: [],
+            buses: [],
+            zones: [],
+            mode: 'navigate',
+            selectedZone: 0,
+            gameSpeed: 1500, // ms entre ticks
+            gameInterval: null,
+            lastTouch: null
+        };
+
+        // Inicialização do jogo
+        function initGame() {
+            // Configurar canvas
+            GameConfig.canvas = document.getElementById('gameCanvas');
+            GameConfig.ctx = GameConfig.canvas.getContext('2d');
+            
+            // Detectar dispositivo
+            GameConfig.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            
+            // Ajustar tamanho do canvas
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+            
+            // Inicializar zonas
+            initZones();
+            
+            // Configurar controles
+            setupControls();
+            
+            // Iniciar soldados iniciais
+            recruitInitialSoldiers();
+            
+            // Iniciar loop do jogo
+            startGameLoop();
+            
+            // Adicionar log inicial
+            addLog('Sistema Antares inicializado. Controle a favela!');
+        }
+
+        function resizeCanvas() {
+            const container = document.querySelector('.game-canvas-container');
+            GameConfig.canvas.width = container.clientWidth;
+            GameConfig.canvas.height = container.clientHeight;
+            GameConfig.width = GameConfig.canvas.width;
+            GameConfig.height = GameConfig.canvas.height;
+            drawGame();
+        }
+
+        function initZones() {
+            const zoneNames = [
+                "Antares", "Morro Azul", "Vila Nova", "Cidade Baixa",
+                "Beco do Sol", "Complexo Bravo", "Alto Verde", "Praça Sombra"
+            ];
+            
+            for (let i = 0; i < 8; i++) {
+                GameState.zones.push({
+                    id: i,
+                    name: zoneNames[i] || `Zona ${i}`,
+                    population: 300 + Math.floor(Math.random() * 1400),
+                    policePresence: Math.floor(Math.random() * 3),
+                    dominance: i === 0 ? "player" : (Math.random() < 0.5 ? "neutral" : "rival")
+                });
+            }
+            
+            // Criar ponto inicial em Antares
+            GameState.points[0] = {
+                zoneId: 0,
+                open: true,
+                stockA: 1.0,
+                stockB: 0.5,
+                revenue: 150
+            };
+        }
+
+        function recruitInitialSoldiers() {
+            for (let i = 0; i < 3; i++) {
+                GameState.soldiers.push({
+                    id: i,
+                    name: `Soldado ${i+1}`,
+                    level: 1,
+                    combat: 5 + Math.floor(Math.random() * 3),
+                    moral: 80 + Math.floor(Math.random() * 15),
+                    salary: 12,
+                    status: 'active'
+                });
+            }
+            updateUI();
+        }
+
+        function setupControls() {
+            // Mapear botões para ações
+            const actions = {
+                openPoint: () => setMode('openPoint'),
+                closePoint: () => closePoint(),
+                placeBarricade: () => setMode('barricade'),
+                placeBus: () => setMode('placeBus'),
+                igniteBus: () => setMode('igniteBus'),
+                buyA: () => buyProduct('A'),
+                buyB: () => buyProduct('B'),
+                recruit: () => recruitSoldier(),
+                paySalaries: () => paySalaries(),
+                upgradeTraining: () => upgradeTraining(),
+                raid: () => raidZone(),
+                robCargo: () => robCargo(),
+                declareWar: () => declareWar(),
+                payInformer: () => payInformer(),
+                toggleAutoOps: () => toggleAutoOps()
+            };
+
+            // Atribuir eventos aos botões
+            Object.keys(actions).forEach(action => {
+                const button = document.getElementById(action);
+                if (button) {
+                    button.addEventListener('click', actions[action]);
+                }
+            });
+
+            // Controles de toque no canvas
+            GameConfig.canvas.addEventListener('pointerdown', handleCanvasTouch);
+        }
+
+        function handleCanvasTouch(e) {
+            const rect = GameConfig.canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            // Determinar zona clicada (simulação simples)
+            const zoneWidth = GameConfig.width / 4;
+            const zoneHeight = GameConfig.height / 2;
+            const zoneX = Math.floor(x / zoneWidth);
+            const zoneY = Math.floor(y / zoneHeight);
+            const zoneId = zoneY * 4 + zoneX;
+            
+            if (zoneId >= 0 && zoneId < GameState.zones.length) {
+                GameState.selectedZone = zoneId;
+                document.getElementById('selectedZone').textContent = `Zona: ${GameState.zones[zoneId].name}`;
+                
+                // Executar ação baseada no modo atual
+                executeModeAction(zoneId, x, y);
+            }
+        }
+
+        function setMode(mode) {
+            GameState.mode = mode;
+            document.getElementById('modeDisplay').textContent = `Modo: ${getModeName(mode)}`;
+            addLog(`Modo alterado para: ${getModeName(mode)}`);
+        }
+
+        function getModeName(mode) {
+            const modes = {
+                navigate: 'Navegar',
+                openPoint: 'Abrir Ponto',
+                barricade: 'Colocar Barricada',
+                placeBus: 'Colocar Ônibus',
+                igniteBus: 'Incendiar Ônibus'
+            };
+            return modes[mode] || mode;
+        }
+
+        function executeModeAction(zoneId, x, y) {
+            switch (GameState.mode) {
+                case 'openPoint':
+                    openPoint(zoneId);
+                    break;
+                case 'barricade':
+                    placeBarricade(zoneId, x, y);
+                    break;
+                case 'placeBus':
+                    placeBus(zoneId, x, y);
+                    break;
+                case 'igniteBus':
+                    igniteBus(zoneId, x, y);
+                    break;
+                default:
+                    // Modo navegar - apenas seleciona a zona
+                    addLog(`Zona ${GameState.zones[zoneId].name} selecionada`);
+                    break;
+            }
+            // Voltar ao modo de navegação após ação
+            setMode('navigate');
+        }
+
+        // Implementações das ações do jogo
+        function openPoint(zoneId) {
+            if (GameState.points[zoneId]) {
+                addLog('Já existe um ponto nesta zona!');
+                return;
+            }
+            
+            const cost = 500;
+            if (GameState.money < cost) {
+                addLog('Dinheiro insuficiente para abrir ponto!');
+                return;
+            }
+            
+            GameState.money -= cost;
+            GameState.points[zoneId] = {
+                zoneId: zoneId,
+                open: true,
+                stockA: 0,
+                stockB: 0,
+                revenue: Math.floor(GameState.zones[zoneId].population / 10)
+            };
+            
+            addLog(`Ponto aberto em ${GameState.zones[zoneId].name}!`);
+            GameState.heat += 5;
+            updateUI();
+        }
+
+        function closePoint() {
+            const zoneId = GameState.selectedZone;
+            if (!GameState.points[zoneId]) {
+                addLog('Nenhum ponto para fechar nesta zona!');
+                return;
+            }
+            
+            delete GameState.points[zoneId];
+            addLog(`Ponto fechado em ${GameState.zones[zoneId].name}`);
+            GameState.heat = Math.max(0, GameState.heat - 3);
+            updateUI();
+        }
+
+        function placeBarricade(zoneId, x, y) {
+            GameState.barricades.push({
+                zoneId: zoneId,
+                x: x,
+                y: y
+            });
+            addLog(`Barricada colocada em ${GameState.zones[zoneId].name}`);
+            GameState.heat += 2;
+            updateUI();
+        }
+
+        function placeBus(zoneId, x, y) {
+            GameState.buses.push({
+                zoneId: zoneId,
+                x: x,
+                y: y,
+                burning: false
+            });
+            addLog(`Ônibus colocado em ${GameState.zones[zoneId].name}`);
+            updateUI();
+        }
+
+        function igniteBus(zoneId, x, y) {
+            // Encontrar ônibus próximo
+            const bus = GameState.buses.find(b => 
+                b.zoneId === zoneId && 
+                Math.abs(b.x - x) < 50 && 
+                Math.abs(b.y - y) < 50
+            );
+            
+            if (!bus) {
+                addLog('Nenhum ônibus próximo para incendiar!');
+                return;
+            }
+            
+            if (bus.burning) {
+                addLog('Ônibus já está em chamas!');
+                return;
+            }
+            
+            bus.burning = true;
+            addLog(`Ônibus incendiado em ${GameState.zones[zoneId].name}!`);
+            GameState.heat += 10;
+            updateUI();
+        }
+
+        function buyProduct(type) {
+            const cost = type === 'A' ? 600 : 1200;
+            if (GameState.money < cost) {
+                addLog(`Dinheiro insuficiente para comprar produto ${type}!`);
+                return;
+            }
+            
+            GameState.money -= cost;
+            // Adicionar ao inventário (simulação)
+            addLog(`Produto ${type} comprado por R$${cost}`);
+            updateUI();
+        }
+
+        function recruitSoldier() {
+            const cost = 100;
+            if (GameState.money < cost) {
+                addLog('Dinheiro insuficiente para recrutar soldado!');
+                return;
+            }
+            
+            GameState.money -= cost;
+            const newSoldier = {
+                id: GameState.soldiers.length,
+                name: `Recruta ${GameState.soldiers.length + 1}`,
+                level: 1,
+                com
